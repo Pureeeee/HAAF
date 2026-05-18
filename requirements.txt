@@ -1,0 +1,13 @@
+torch
+torchvision
+timm
+kornia
+scikit-learn
+tqdm
+pillow
+numpy
+pandas
+ftfy
+regex
+packaging
+huggingface_hub

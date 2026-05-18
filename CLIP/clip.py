@@ -60,6 +60,12 @@ def get_model_config(model_name):
 
 
 def load_state_dict(checkpoint_path: str, map_location='cpu'):
+    if not os.path.isfile(checkpoint_path):
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}. Place the OpenAI "
+            "ViT-L/14@336px checkpoint there or run "
+            "`python scripts/prepare_checkpoints.py --clip`."
+        )
     checkpoint = torch.load(checkpoint_path, map_location=map_location)
     if isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
         state_dict = checkpoint['state_dict']
@@ -148,7 +154,7 @@ def create_model(
                 precision=precision,
                 device=device,
                 jit=jit,
-                cache_dir=cache_dir,
+                cache_dir=None,
             )
 
 

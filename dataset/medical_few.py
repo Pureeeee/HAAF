@@ -7,8 +7,8 @@ import random
 import pandas as pd
 import numpy as np
 
-CLASS_NAMES = ['Histopathology', 'CRC', 'SICAP','BRACS']
-CLASS_INDEX = {'Histopathology':-3, 'CRC':-4, 'SICAP':-5 , 'BRACS':-6}
+CLASS_NAMES = ['Brain', 'Liver', 'Retina_RESC', 'Retina_OCT2017', 'Chest', 'Histopathology', 'CRC', 'SICAP','BRACS']
+CLASS_INDEX = {'Brain':3, 'Liver':2, 'Retina_RESC':1, 'Retina_OCT2017':-1, 'Chest':-2, 'Histopathology':-3, 'CRC':-4, 'SICAP':-5 , 'BRACS':-6}
 
 
 class MedDataset(Dataset):
@@ -29,7 +29,7 @@ class MedDataset(Dataset):
         self.class_name = class_name
         self.seg_flag = CLASS_INDEX[class_name]
 
-
+        # load dataset
         self.x, self.y, self.mask = self.load_dataset_folder(self.seg_flag)
 
 
@@ -47,7 +47,8 @@ class MedDataset(Dataset):
 
         self.fewshot_norm_img = self.get_few_normal()
         self.fewshot_abnorm_img, self.fewshot_abnorm_mask = self.get_few_abnormal()
-        
+
+
 
     def __getitem__(self, idx):
         x, y, mask = self.x[idx], self.y[idx], self.mask[idx]
@@ -93,6 +94,7 @@ class MedDataset(Dataset):
         assert len(x) == len(y), 'number of x and y should be same'
         return list(x), list(y), list(mask)
 
+
     def get_few_normal(self):
         x = []
         img_dir = os.path.join(self.dataset_path, 'valid', 'good', 'img')
@@ -105,7 +107,7 @@ class MedDataset(Dataset):
             random_choice = []
             with open(f'./dataset/fewshot_seed/{self.class_name}/{self.shot}-shot.txt', 'r', encoding='utf-8') as infile:
                 for line in infile:
-                    data_line = line.strip("\n").split()  
+                    data_line = line.strip("\n").split()  # 去除首尾换行符，并按空格划分
                     if data_line[0] == f'n-{self.iterate}:':
                         random_choice = data_line[1:]
                         break
@@ -141,7 +143,7 @@ class MedDataset(Dataset):
             random_choice = []
             with open(f'./dataset/fewshot_seed/{self.class_name}/{self.shot}-shot.txt', 'r', encoding='utf-8') as infile:
                 for line in infile:
-                    data_line = line.strip("\n").split()  
+                    data_line = line.strip("\n").split()  # 去除首尾换行符，并按空格划分
                     if data_line[0] == f'a-{self.iterate}:':
                         random_choice = data_line[1:]
                         break

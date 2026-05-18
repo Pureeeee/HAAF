@@ -33,7 +33,7 @@ from loss import FocalLoss, BinaryDiceLoss
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 use_cuda = torch.cuda.is_available()
-device = torch.device("cuda:2" if use_cuda else "cpu")
+device = torch.device("cuda" if use_cuda else "cpu")
 
 CLASS_INDEX = {
     "Brain": 3,
@@ -78,6 +78,11 @@ def build_clip_backbone(args):
 
 def build_conch_encoder():
     ckpt_path = "./conch/checkpoints/pytorch_model_vision.bin"
+    if not os.path.isfile(ckpt_path):
+        raise FileNotFoundError(
+            f"CONCH v1.5 checkpoint not found: {ckpt_path}. "
+            "Place `pytorch_model_vision.bin` there before running HAAF."
+        )
     state_dict = torch.load(ckpt_path, map_location="cpu")
 
     vision_tower = timm.create_model(
@@ -691,6 +696,7 @@ def evaluate(
 
 def parse_args():
     p = argparse.ArgumentParser(description="Few-shot Medical AD with MMA")
+    p.add_argument("--device", type=str, default=None, help="Device, e.g. cuda, cuda:0, or cpu.")
     p.add_argument("--model_name", type=str, default="ViT-L-14-336")
     p.add_argument("--pretrain", type=str, default="openai")
     p.add_argument("--obj", type=str, default="Histopathology")
@@ -705,7 +711,7 @@ def parse_args():
     p.add_argument("--features_list", type=int, nargs="+", default=[6, 12, 18, 24])
     p.add_argument("--seed", type=int, default=111)
     p.add_argument("--shot", type=int, default=4)
-    p.add_argument("--iterate", type=int, default=0)
+    p.add_argument("--iterate", type=int, default=-1)
     p.add_argument("--coop-n-ctx", type=int, default=16)
     p.add_argument("--coop-ctx-init", type=str, default="")
     p.add_argument("--coop-class-pos", type=str, default="end", choices=["end", "middle"])
@@ -713,7 +719,10 @@ def parse_args():
     p.add_argument("--coop-precision", type=str, default="fp32", choices=["fp16", "fp32"])
     p.add_argument("--disable-coop-prompts", action="store_true")
     p.add_argument("--coop-prompt-lr", type=float, default=1e-4)
-    p.add_argument("--enable-mma", default=True)
+    mma_group = p.add_mutually_exclusive_group()
+    mma_group.add_argument("--enable-mma", dest="enable_mma", action="store_true")
+    mma_group.add_argument("--disable-mma", dest="enable_mma", action="store_false")
+    p.set_defaults(enable_mma=True)
     p.add_argument("--mma-text-init", type=str, default="")
     p.add_argument("--mma-adapter-dim", type=int, default=128)
     p.add_argument("--mma_text_adapter_scale", type=float, default=0.2)
@@ -725,7 +734,14 @@ def parse_args():
     return p.parse_args()
 
 def main():
+    global device, use_cuda
     args = parse_args()
+    if args.device is not None:
+        device = torch.device(args.device)
+    else:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    use_cuda = device.type == "cuda"
+
     setup_seed(args.seed)
 
     clip_model = build_clip_backbone(args)

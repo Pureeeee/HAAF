@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torchvision.ops.misc import FrozenBatchNorm2d
 
 
 def freeze_batch_norm_2d(module, module_match={}, name=''):
